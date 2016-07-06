@@ -33,13 +33,18 @@ function getReactProps(node, parent) {
   return node.openingElement.attributes
     .map(attribute => {
       let valueType;
-      let valueName = attribute.value.expression.property.name;
+      const valueName = attribute.value.expression.property.name;
       if (attribute.value.expression.object.property) {
         valueType = attribute.value.expression.object.property.name;
       }
+      console.log({
+        name: attribute.name.name,
+        value: valueType ? `${valueType}.${valueName}` : valueName,
+        parent: parent,
+      });
       return {
         name: attribute.name.name,
-        value: valueType ? valueType + '.' + valueName : valueName,
+        value: valueType ? `${valueType}.${valueName}` : valueName,
         parent: parent,
       };
     });
