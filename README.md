@@ -44,7 +44,7 @@ The rendered tree is synced up to the state(s) of your component using Redux, an
   4. previewParserTest.js
   5. reactParserTest.js
   6. test.js (to compile and run all tests at once)
-* Please add new tests to relevant files specified above, or create new test files as needed.  We look forward to seeing all of your contributions!
+* Please add new tests to relevant files specified above, or create new test files as needed.
 
 ## Coming Soon
 
