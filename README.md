@@ -33,6 +33,10 @@ The rendered tree is synced up to the state(s) of your component using Redux, an
 | Directory  | --directory (-e)  | directory of React files. Defaults to where Monocle was called.                                                              |
 | Extension  | --extension (-j)  | extension of React files (jsx or js). Defaults to .jsx (only use when specifying/in directory which has your React files!).  |
 
+## Contributing/Testing
+
+* After installing, you can run tests via ```npm run unit-tests``` or ```npm run test``` to run ESLint simultaneously
+* Tests can be added to relevant files in src/test
 
 ## Coming Soon
 
