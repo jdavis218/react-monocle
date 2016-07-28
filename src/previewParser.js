@@ -313,7 +313,6 @@ module.exports = {
   structureInitialES6StateObj,
   queryES5Ast,
   queryES6Ast,
-  modifyBundleFile,
   modifyTestBundleFile,
   modifySetStateStrings,
   modifyInitialState,
