@@ -35,8 +35,16 @@ The rendered tree is synced up to the state(s) of your component using Redux, an
 
 ## Contributing/Testing
 
+* Please feel free to fork and submit pull resquests!
 * After installing, you can run tests via ```npm run unit-tests``` or ```npm run test``` to run ESLint simultaneously
-* Tests can be added to relevant files in src/test
+* Tests can be found in src/test and are currently broken out into: 
+  1. astGeneratorTest.js
+  2. d3DataBuilderTest.js
+  3. iterTest.js
+  4. previewParserTest.js
+  5. reactParserTest.js
+  6. test.js (to compile and run all tests at once)
+* Please add new tests to relevant files specified above, or create new test files as needed.  We look forward to seeing all of your contributions!
 
 ## Coming Soon
 
