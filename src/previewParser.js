@@ -7,7 +7,6 @@ const regexLastIndexOf = require('./stringRegexHelper').regexLastIndexOf;
 const strip = require('strip-comments');
 
 
-
 function getComponentName(bundle, startingIndex) {
   let bundleSearchIndicesMap = {};
   // get index of component declaration
