@@ -1,50 +1,51 @@
 'use strict';
 const fs = require('fs');
-const acorn = require('acorn');
-const esquery = require('../esquery/esquery');
-const regexIndexOf = require('./stringRegexHelper').regexIndexOf;
 const regexLastIndexOf = require('./stringRegexHelper').regexLastIndexOf;
 const strip = require('strip-comments');
 
+const WEBPACKES5 = /(var )?\w+\s*?=\s*(\(\d+, )?_react(\d+\["\w+"\])?.createClass/;
+const WEBPACKES6 = /(var )?\w+\s*?=\s*?function\s*?\(_(React\$)?Component\)/;
+const GULP = /var \w+ = React.createClass\({/;
+const ROLLUP = /var \w+ = \(function \(superclass\) {/;
 
 function getComponentName(bundle, startingIndex) {
-  let bundleSearchIndicesMap = {};
+  const bundleSearchIndicesMap = {};
   // get index of component declaration
-  bundleSearchIndicesMap[regexLastIndexOf(bundle, /(var )?\w+\s*?=\s*(\(\d+\, )?_react(\d+\[\"\w+\"\])?.createClass/, startingIndex)] = 'WEBPACKES5';
+  bundleSearchIndicesMap[regexLastIndexOf(bundle, WEBPACKES5, startingIndex)] = 'WEBPACKES5';
   // let's try ES6...
-  bundleSearchIndicesMap[regexLastIndexOf(bundle, /(var )?\w+\s*?=\s*?function\s*?\(_(React\$)?Component\)/, startingIndex)] = 'WEBPACKES6';
+  bundleSearchIndicesMap[regexLastIndexOf(bundle, WEBPACKES6, startingIndex)] = 'WEBPACKES6';
   // let's try GULP
-  bundleSearchIndicesMap[regexLastIndexOf(bundle, /var \w+ = React.createClass\({/, startingIndex)] = 'GULP';
+  bundleSearchIndicesMap[regexLastIndexOf(bundle, GULP, startingIndex)] = 'GULP';
   // let's try Rollup ex: var Slick = (function (superclass) {
-  bundleSearchIndicesMap[regexLastIndexOf(bundle, /var \w+ = \(function \(superclass\) {/, startingIndex)] = 'ROLLUP';
+  bundleSearchIndicesMap[regexLastIndexOf(bundle, ROLLUP, startingIndex)] = 'ROLLUP';
   const targetIndex = Object.keys(bundleSearchIndicesMap)
-  	.filter(index => index >= 0)
-  	.reduce((prev, curr) => {
-  	  return Math.abs(curr-startingIndex) < Math.abs(prev-startingIndex)
-  	  	? curr
-  	  	: prev;
-  	});
- 
+    .filter(index => index >= 0)
+    .reduce((prev, curr) => {
+      return Math.abs(curr - startingIndex) < Math.abs(prev - startingIndex)
+      ? curr
+      : prev;
+    });
+
   let componentMatch;
-  switch(bundleSearchIndicesMap[targetIndex]) {
-  	case 'WEBPACKES5':
-  	  componentMatch = bundle.slice(targetIndex)
-  	  	.match(/(var )?\w+\s*?=\s*(\(\d+\, )?_react(\d+\[\"\w+\"\])?.createClass/)
-  	  break;
+  switch (bundleSearchIndicesMap[targetIndex]) {
+    case 'WEBPACKES5':
+      componentMatch = bundle.slice(targetIndex)
+      .match(/(var )?\w+\s*?=\s*(\(\d+, )?_react(\d+\["\w+"\])?.createClass/);
+      break;
     case 'WEBPACKES6':
-   	  componentMatch = bundle.slice(targetIndex)
-  	    .match(/(var )?\w+\s*?=\s*?function\s*?\(_(React\$)?Component\)/)
-   	  break;
+      componentMatch = bundle.slice(targetIndex)
+      .match(/(var )?\w+\s*?=\s*?function\s*?\(_(React\$)?Component\)/);
+      break;
     case 'GULP':
       componentMatch = bundle.slice(targetIndex)
-        .match(/var \w+ = React.createClass\({/)
+        .match(/var \w+ = React.createClass\({/);
       break;
     case 'ROLLUP':
       componentMatch = bundle.slice(targetIndex)
-        .match(/var \w+ = \(function \(superclass\) {/)
+        .match(/var \w+ = \(function \(superclass\) {/);
       break;
     default:
-    	throw new Error('Unable to find component from bundle file');
+      throw new Error('Unable to find component from bundle file');
   }
 
   // need to normalize component name (remove declarator ex. var, const)
@@ -58,19 +59,21 @@ function modifySetStateStrings(bundleFilePath) {
   let bundle;
   try {
     bundle = fs.readFileSync(bundleFilePath, { encoding: 'utf-8' });
-  } catch(error) {
+  } catch (error) {
     throw new Error('Invalid bundle file path specified. Please enter a valid path to your app\'s bundle file');
   }
 
-  if (bundle.length == 0) throw new Error('Bundle string is empty, provide valid bundle string input');
-  
+  if (bundle.length === 0) {
+    throw new Error('Bundle string is empty, provide valid bundle string input');
+  }
+
   console.log('Starting to strip comments from bundle file...');
   const start = Date.now();
   let modifiedBundle = strip(bundle.slice());
   console.log(`Took ${(Date.now() - start) / 1000} seconds to strip comments input bundle file`);
   let index = modifiedBundle.indexOf('this.setState', 0);
   while (index !== -1) {
-    let openBraceIdx = modifiedBundle.indexOf('{', index);
+    const openBraceIdx = modifiedBundle.indexOf('{', index);
     let currentIdx = openBraceIdx + 1;
     const parensStack = ['{'];
     while (parensStack.length !== 0) {
@@ -88,13 +91,13 @@ function modifySetStateStrings(bundleFilePath) {
     }
     currentIdx--;
     const callbackStr = modifiedBundle.slice(functionStartIdx, currentIdx);
-    const injection = `wrapper('${getComponentName(modifiedBundle, index)}',this)(${ stateStr }${ callbackStr })`;
+    const injection = `wrapper('${getComponentName(modifiedBundle,
+      index)}',this)(${stateStr}${callbackStr})`;
     modifiedBundle = modifiedBundle.slice(0, index) + injection + modifiedBundle.slice(currentIdx + 1);
     // need to take into account that length of bundle now changes since injected wrapper string length can be different than original
     const oldLength = currentIdx - index;
     const newLength = injection.length;
-    
-    index = modifiedBundle.indexOf('this.setState', index+1+newLength-oldLength);
+    index = modifiedBundle.indexOf('this.setState', index + 1 + newLength - oldLength);
   }
   return modifiedBundle;
 }
