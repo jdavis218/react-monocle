@@ -119,7 +119,8 @@ function modifyInitialState(modifiedBundle) {
   }
 
   while (index !== -1) {
-    let openBraceIdx = modifiedBundle.indexOf('{', index); // looking for index of follow brace, after return statement
+    // looking for index of follow brace, after return statement
+    const openBraceIdx = modifiedBundle.indexOf('{', index);
     let currentIdx = openBraceIdx + 1;
     const parensStack = ['{'];
     while (parensStack.length !== 0) {
@@ -128,9 +129,9 @@ function modifyInitialState(modifiedBundle) {
       currentIdx++;
     }
 
-    let injection,
-        componentName = getComponentName(modifiedBundle, index),
-        stateStr = modifiedBundle.slice(openBraceIdx, currentIdx);
+    let injection;
+    const componentName = getComponentName(modifiedBundle, index);
+    const stateStr = modifiedBundle.slice(openBraceIdx, currentIdx);
     if (modifiedBundle.indexOf('_this.state', 0) >= 0) {
       injection = `_this.state = grabInitialState('${componentName}', ${stateStr}),`;
     } else if (modifiedBundle.indexOf('getInitialState() {', 0) >= 0) {
