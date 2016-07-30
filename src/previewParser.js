@@ -60,7 +60,8 @@ function modifySetStateStrings(bundleFilePath) {
   try {
     bundle = fs.readFileSync(bundleFilePath, { encoding: 'utf-8' });
   } catch (error) {
-    throw new Error('Invalid bundle file path specified. Please enter a valid path to your app\'s bundle file');
+    throw new Error('Invalid bundle file path specified.' +
+      ' Please enter a valid path to your app\'s bundle file');
   }
 
   if (bundle.length === 0) {
@@ -93,8 +94,10 @@ function modifySetStateStrings(bundleFilePath) {
     const callbackStr = modifiedBundle.slice(functionStartIdx, currentIdx);
     const injection = `wrapper('${getComponentName(modifiedBundle,
       index)}',this)(${stateStr}${callbackStr})`;
-    modifiedBundle = modifiedBundle.slice(0, index) + injection + modifiedBundle.slice(currentIdx + 1);
-    // need to take into account that length of bundle now changes since injected wrapper string length can be different than original
+    modifiedBundle = modifiedBundle.slice(0, index) + injection
+      + modifiedBundle.slice(currentIdx + 1);
+    /* need to take into account that length of bundle now changes since injected wrapper
+    string length can be different than original */
     const oldLength = currentIdx - index;
     const newLength = injection.length;
     index = modifiedBundle.indexOf('this.setState', index + 1 + newLength - oldLength);
@@ -105,75 +108,78 @@ function modifySetStateStrings(bundleFilePath) {
 
 function modifyInitialState(modifiedBundle) {
   let index = -1;
-  if (modifiedBundle.indexOf('_this.state') >= 0) {
+  let newModifiedBundle = modifiedBundle;
+  if (newModifiedBundle.indexOf('_this.state') >= 0) {
     // do webpack
-    index = modifiedBundle.indexOf('_this.state', 0);
-  } else if (modifiedBundle.indexOf('getInitialState() {', 0) >= 0) {
+    index = newModifiedBundle.indexOf('_this.state', 0);
+  } else if (newModifiedBundle.indexOf('getInitialState() {', 0) >= 0) {
     // do gulp
-    index = modifiedBundle.indexOf('getInitialState() {', 0) + 19;
-  } else if (modifiedBundle.indexOf('this.state', 0) >= 0) {
+    index = newModifiedBundle.indexOf('getInitialState() {', 0) + 19;
+  } else if (newModifiedBundle.indexOf('this.state', 0) >= 0) {
     // do rollup
-    index = modifiedBundle.indexOf('this.state = {');
+    index = newModifiedBundle.indexOf('this.state = {');
   } else {
     throw new Error('Unable to find component initial state');
   }
 
   while (index !== -1) {
     // looking for index of follow brace, after return statement
-    const openBraceIdx = modifiedBundle.indexOf('{', index);
+    const openBraceIdx = newModifiedBundle.indexOf('{', index);
     let currentIdx = openBraceIdx + 1;
     const parensStack = ['{'];
     while (parensStack.length !== 0) {
-      if (modifiedBundle[currentIdx] === '{') parensStack.push(modifiedBundle[currentIdx]);
-      if (modifiedBundle[currentIdx] === '}') parensStack.pop();
+      if (newModifiedBundle[currentIdx] === '{') parensStack.push(newModifiedBundle[currentIdx]);
+      if (newModifiedBundle[currentIdx] === '}') parensStack.pop();
       currentIdx++;
     }
 
     let injection;
-    const componentName = getComponentName(modifiedBundle, index);
-    const stateStr = modifiedBundle.slice(openBraceIdx, currentIdx);
-    if (modifiedBundle.indexOf('_this.state', 0) >= 0) {
+    const componentName = getComponentName(newModifiedBundle, index);
+    const stateStr = newModifiedBundle.slice(openBraceIdx, currentIdx);
+    if (newModifiedBundle.indexOf('_this.state', 0) >= 0) {
       injection = `_this.state = grabInitialState('${componentName}', ${stateStr}),`;
-    } else if (modifiedBundle.indexOf('getInitialState() {', 0) >= 0) {
+    } else if (newModifiedBundle.indexOf('getInitialState() {', 0) >= 0) {
       injection = `return grabInitialState('${componentName}', ${stateStr}),`;
-    } else if (modifiedBundle.indexOf('this.state = {', 0) >= 0) {
+    } else if (newModifiedBundle.indexOf('this.state = {', 0) >= 0) {
       injection = `this.state = grabInitialState('${componentName}', ${stateStr}),`;
     }
 
-    modifiedBundle = modifiedBundle.slice(0, index) + injection + modifiedBundle.slice(currentIdx + 1);
-    
-    // need to take into account that length of bundle now changes since injected wrapper string length can be different than original
+    newModifiedBundle = newModifiedBundle.slice(0, index) + injection
+      + newModifiedBundle.slice(currentIdx + 1);
+    /* need to take into account that length of bundle now changes since injected wrapper
+    string length can be different than original */
     const oldLength = currentIdx - index;
     const newLength = injection.length;
-    
-    if (modifiedBundle.indexOf('_this.state') >= 0) {
-      index = modifiedBundle.indexOf('_this.state', index + 1 + newLength - oldLength);
-    } else if (modifiedBundle.indexOf('getInitialState() {') >= 0) {
-      index = modifiedBundle.indexOf('getInitialState() {', index + 1 + newLength - oldLength);
-    } else if (modifiedBundle.indexOf('this.state = grabInitialState') >= 0) {
-      index = modifiedBundle.indexOf('this.state = grabInitialState', index + 1 + newLength - oldLength);
+
+    if (newModifiedBundle.indexOf('_this.state') >= 0) {
+      index = newModifiedBundle.indexOf('_this.state', index + 1 + newLength - oldLength);
+    } else if (newModifiedBundle.indexOf('getInitialState() {') >= 0) {
+      index = newModifiedBundle.indexOf('getInitialState() {', index + 1 + newLength - oldLength);
+    } else if (newModifiedBundle.indexOf('this.state = grabInitialState') >= 0) {
+      index = newModifiedBundle.indexOf('this.state = grabInitialState',
+        index + 1 + newLength - oldLength);
     } else {
       throw new Error('Unable to find next initial state index');
     }
   }
-  return modifiedBundle;
+  return newModifiedBundle;
 }
 
 
-function getDivs(modifiedBundle) {
-  let index = modifiedBundle.indexOf('getElementById(', 0);
+function getDivs(newModifiedBundle) {
+  let index = newModifiedBundle.indexOf('getElementById(', 0);
   let divsArr = [];
   while (index !== -1) {
-    let openParenIdx = modifiedBundle.indexOf('(', index - 1);
+    const openParenIdx = newModifiedBundle.indexOf('(', index - 1);
     let currentIdx = openParenIdx + 1;
     const parensStack = ['('];
     while (parensStack.length !== 0) {
-      if (modifiedBundle[currentIdx] === '(') parensStack.push(modifiedBundle[currentIdx]);
-      if (modifiedBundle[currentIdx] === ')') parensStack.pop();
+      if (newModifiedBundle[currentIdx] === '(') parensStack.push(newModifiedBundle[currentIdx]);
+      if (newModifiedBundle[currentIdx] === ')') parensStack.pop();
       currentIdx++;
     }
-    divsArr.push(modifiedBundle.slice(openParenIdx + 2, currentIdx - 2));
-    index = modifiedBundle.indexOf('getElementById(', index + 1);
+    divsArr.push(newModifiedBundle.slice(openParenIdx + 2, currentIdx - 2));
+    index = newModifiedBundle.indexOf('getElementById(', index + 1);
   }
   divsArr = divsArr.map(ele => {
     return `<div id='${ele}'></div>`;
