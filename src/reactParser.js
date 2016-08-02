@@ -64,7 +64,7 @@ function getReactProps(node, parent) {
         valueName = valueName.replace('.', '');
       } else if (attribute.value.expression.type === 'LogicalExpression') {
         valueName = attribute.value.expression.left.property.name;
-        valueType = attribute.value.expression.left.object.name;
+        // valueType = attribute.value.expression.left.object.name;
       } else if (attribute.value.expression.type === 'JSXElement') {
         const nodez = attribute.value.expression;
         const output = {
@@ -147,8 +147,9 @@ function forInFinder(arr, name) {
       for (let i = 0; i < propsArr.length; i++) {
         for (const key in obj.variables) {
           if (propsArr[i].value.includes(key)) {
-            if (obj.variables[key] === '[key]') propsArr[i].value = propsArr[i].value.replace(`.${key}`, obj.variables[key]);
-            else propsArr[i].value = propsArr[i].value.replace(key, obj.variables[key]);
+            if (obj.variables[key] === '[key]') {
+              propsArr[i].value = propsArr[i].value.replace(`.${key}`, obj.variables[key]);
+            } else propsArr[i].value = propsArr[i].value.replace(key, obj.variables[key]);
           }
         }
       }
@@ -168,7 +169,8 @@ function forLoopFinder(arr, name) {
     // finding variables in case information was reassigned
     esquery(ele, 'VariableDeclarator').forEach(vars => {
       if (vars.id.name !== 'i' && vars.init) {
-        obj.variables[vars.id.name] = escodegen.generate(vars.init).replace('this.', '').replace('.length', '');
+        obj.variables[vars.id.name] = escodegen.generate(vars.init)
+        .replace('this.', '').replace('.length', '');
       }
     });
 
@@ -204,8 +206,9 @@ function forLoopFinder(arr, name) {
       for (let i = 0; i < propsArr.length; i++) {
         for (const key in obj.variables) {
           if (propsArr[i].value.includes(key)) {
-            if (obj.variables[key] === '[i]') propsArr[i].value = propsArr[i].value.replace(`.${key}`, obj.variables[key]);
-            else propsArr[i].value = propsArr[i].value.replace(key, obj.variables[key]);
+            if (obj.variables[key] === '[i]') {
+              propsArr[i].value = propsArr[i].value.replace(`.${key}`, obj.variables[key]);
+            } else propsArr[i].value = propsArr[i].value.replace(key, obj.variables[key]);
           }
         }
       }
@@ -277,7 +280,8 @@ function isES6ReactComponent(node) {
 /**
  * Recursively walks AST and extracts ES5 React component names, child components, props and state
  * @param {ast} ast
- * @returns {Object} Nested object containing name, children, props and state properties of components
+ * @returns {Object} Nested object containing name, children,
+ * props and state properties of components
  */
 function getES5ReactComponents(ast) {
   const output = {
@@ -352,8 +356,9 @@ function getES5ReactComponents(ast) {
     }
     return searched.length > 0 && higherOrderChecker;
   });
-  if (higherOrderFunc.length > 0) iter = iter.concat(higherOrderFunctionFinder(higherOrderFunc, output.name));
-
+  if (higherOrderFunc.length > 0) {
+    iter = iter.concat(higherOrderFunctionFinder(higherOrderFunc, output.name));
+  }
   if (outside) output.children.push(outside);
   output.children.forEach((ele, i) => {
     checker[ele.name] = i;
@@ -371,7 +376,8 @@ function getES5ReactComponents(ast) {
 /**
  * Recursively walks AST and extracts ES6 React component names, child components, props and state
  * @param {ast} ast
- * @returns {Object} Nested object containing name, children, props and state properties of components
+ * @returns {Object} Nested object containing name, children,
+ * props and state properties of components
  */
 function getES6ReactComponents(ast) {
   const output = {
@@ -526,8 +532,9 @@ function getStatelessFunctionalComponents(ast, name) {
     }
     return searched.length > 0 && higherOrderChecker;
   });
-  if (higherOrderFunc.length > 0) iter = iter.concat(higherOrderFunctionFinder(higherOrderFunc, output.name));
-
+  if (higherOrderFunc.length > 0) {
+    iter = iter.concat(higherOrderFunctionFinder(higherOrderFunc, output.name));
+  }
   if (outside) output.children.push(outside);
   output.children.forEach((ele, i) => {
     checker[ele.name] = i;
@@ -557,11 +564,13 @@ function jsToAst(js) {
 function componentChecker(ast) {
   for (let i = 0; i < ast.body.length; i++) {
     if (ast.body[i].type === 'ClassDeclaration') return 'ES6';
-    if (ast.body[i].type === 'ExportDefaultDeclaration' && ast.body[i].declaration.type === 'ClassDeclaration') return 'ES6';
+    if (ast.body[i].type === 'ExportDefaultDeclaration'
+    && ast.body[i].declaration.type === 'ClassDeclaration') return 'ES6';
     if (ast.body[i].type === 'VariableDeclaration' && ast.body[i].declarations[0].init
-     && ast.body[i].declarations[0].init.callee
-    && ast.body[i].declarations[0].init.callee.object && ast.body[i].declarations[0].init.callee.object.name === 'React'
-    && ast.body[i].declarations[0].init.callee.property.name === 'createClass') return 'ES5'
+      && ast.body[i].declarations[0].init.callee
+      && ast.body[i].declarations[0].init.callee.object
+      && ast.body[i].declarations[0].init.callee.object.name === 'React'
+      && ast.body[i].declarations[0].init.callee.property.name === 'createClass') return 'ES5';
   }
   return 'SFC';
 }
